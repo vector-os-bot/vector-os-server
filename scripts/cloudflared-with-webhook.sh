@@ -22,43 +22,56 @@ update_webhook() {
     local url=$1
     local webhook_url="${url}/webhook"
     
+    echo "⏳ Ждем 5 секунд, чтобы туннель полностью инициализировался..."
+    sleep 5
+    
     echo "🔄 Обновляю webhook на: ${webhook_url}"
     
-    response=$(curl -s "${TELEGRAM_API_URL}/setWebhook?url=${webhook_url}")
+    # Пробуем несколько раз с задержкой, так как туннель может быть еще не готов
+    max_attempts=3
+    attempt=1
     
-    if echo "$response" | grep -q '"ok":true'; then
-        echo "✅ Webhook успешно обновлен!"
-        echo "📝 Ответ: $response"
-    else
-        echo "❌ Ошибка обновления webhook: $response"
-    fi
+    while [ $attempt -le $max_attempts ]; do
+        response=$(curl -s "${TELEGRAM_API_URL}/setWebhook?url=${webhook_url}")
+        
+        if echo "$response" | grep -q '"ok":true'; then
+            echo "✅ Webhook успешно обновлен с попытки #$attempt!"
+            echo "📝 Ответ: $response"
+            return 0
+        else
+            echo "⚠️ Попытка #$attempt не удалась: $response"
+            if [ $attempt -lt $max_attempts ]; then
+                echo "⏳ Ждем еще 3 секунды и пробуем снова..."
+                sleep 3
+            fi
+        fi
+        attempt=$((attempt + 1))
+    done
+    
+    echo "❌ Не удалось обновить webhook после $max_attempts попыток"
+    return 1
 }
 
+# Файл для отслеживания обновления webhook
+WEBHOOK_UPDATED_FILE="/tmp/cloudflared_webhook_updated.txt"
+
 # Запускаем cloudflared и перехватываем его вывод
-/usr/local/bin/cloudflared tunnel --url http://localhost:8080 2>&1 | while IFS= read -r line; do
-    # Выводим строки cloudflared в лог
+# Используем временный файл для избежания проблем с subshell
+/usr/local/bin/cloudflared tunnel --url http://localhost:8080 2>&1 | tee /tmp/cloudflared_output.log | while IFS= read -r line || [ -n "$line" ]; do
+    # Выводим строки cloudflared в stdout (пойдут в journal)
     echo "$line"
     
-    # Ищем строку с URL туннеля (может быть в разных форматах)
+    # Ищем строку с URL туннеля
     if echo "$line" | grep -q "trycloudflare.com"; then
-        # Извлекаем URL из строки (используем extended regex)
+        # Извлекаем URL из строки
         url=$(echo "$line" | grep -oE 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' | head -1)
         
-        if [ ! -z "$url" ]; then
+        if [ ! -z "$url" ] && [ ! -f "$WEBHOOK_UPDATED_FILE" ]; then
             echo "🌐 Найден URL туннеля: $url"
             update_webhook "$url"
-            # Сохраняем URL в файл для последующего использования
+            # Сохраняем URL и флаг обновления
             echo "$url" > /tmp/cloudflared_url.txt
-        fi
-    fi
-    
-    # Также проверяем формат "Visit it at"
-    if echo "$line" | grep -q "Visit it at"; then
-        url=$(echo "$line" | grep -oE 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' | head -1)
-        if [ ! -z "$url" ]; then
-            echo "🌐 Найден URL из лога: $url"
-            update_webhook "$url"
-            echo "$url" > /tmp/cloudflared_url.txt
+            touch "$WEBHOOK_UPDATED_FILE"
         fi
     fi
 done
