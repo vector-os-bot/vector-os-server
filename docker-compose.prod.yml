@@ -50,12 +50,10 @@ services:
       DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-vectoros}?currentSchema=vectoros
       DATABASE_USER: ${POSTGRES_USER:-postgres}
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_production}
+      # Используем формат, который Spring Boot точно понимает
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
       SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-      # Явное указание свойства для Spring Boot
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_WEBAPP_URL: ${TELEGRAM_WEBAPP_URL:-https://yourdomain.com/cabinet}
       SERVER_PORT: 8080
