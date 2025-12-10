@@ -34,37 +34,50 @@ public class ReminderDebugController {
     public ResponseEntity<Map<String, Object>> getReminderStatus(@PathVariable Long id) {
         Map<String, Object> status = new HashMap<>();
         
-        // Получаем напоминание из БД
-        ReminderEntity reminder = reminderRepository.findById(id).orElse(null);
-        if (reminder == null) {
-            status.put("error", "Reminder not found");
+        try {
+            // Получаем напоминание из БД
+            ReminderEntity reminder = reminderRepository.findById(id).orElse(null);
+            if (reminder == null) {
+                status.put("error", "Reminder not found");
+                return ResponseEntity.ok(status);
+            }
+
+            status.put("reminder", Map.of(
+                "id", reminder.getId(),
+                "title", reminder.getTitle(),
+                "status", reminder.getStatus(),
+                "nextReminderTime", reminder.getNextReminderTime() != null ? reminder.getNextReminderTime().toString() : null,
+                "retryCount", reminder.getRetryCount(),
+                "lastAttemptAt", reminder.getLastAttemptAt() != null ? reminder.getLastAttemptAt().toString() : null
+            ));
+
+            // Проверяем в Redis (с обработкой ошибок)
+            try {
+                ZSetOperations<String, String> zSetOps = redisTemplate.opsForZSet();
+                Double score = zSetOps.score("reminders:active", String.valueOf(id));
+                status.put("inRedis", score != null);
+                status.put("redisScore", score != null ? Instant.ofEpochMilli(score.longValue()).toString() : null);
+                status.put("redisError", null);
+            } catch (Exception e) {
+                status.put("inRedis", false);
+                status.put("redisScore", null);
+                status.put("redisError", e.getMessage());
+            }
+
+            // Текущее время
+            Instant now = Instant.now();
+            status.put("currentTime", now.toString());
+            status.put("isDue", reminder.getNextReminderTime() != null && reminder.getNextReminderTime().isBefore(now));
+            status.put("timeUntilDue", reminder.getNextReminderTime() != null 
+                ? java.time.Duration.between(now, reminder.getNextReminderTime()).getSeconds() 
+                : null);
+
             return ResponseEntity.ok(status);
+        } catch (Exception e) {
+            status.put("error", e.getMessage());
+            status.put("errorType", e.getClass().getSimpleName());
+            return ResponseEntity.status(500).body(status);
         }
-
-        status.put("reminder", Map.of(
-            "id", reminder.getId(),
-            "title", reminder.getTitle(),
-            "status", reminder.getStatus(),
-            "nextReminderTime", reminder.getNextReminderTime(),
-            "retryCount", reminder.getRetryCount(),
-            "lastAttemptAt", reminder.getLastAttemptAt()
-        ));
-
-        // Проверяем в Redis
-        ZSetOperations<String, String> zSetOps = redisTemplate.opsForZSet();
-        Double score = zSetOps.score("reminders:active", String.valueOf(id));
-        status.put("inRedis", score != null);
-        status.put("redisScore", score != null ? Instant.ofEpochMilli(score.longValue()) : null);
-
-        // Текущее время
-        Instant now = Instant.now();
-        status.put("currentTime", now);
-        status.put("isDue", reminder.getNextReminderTime() != null && reminder.getNextReminderTime().isBefore(now));
-        status.put("timeUntilDue", reminder.getNextReminderTime() != null 
-            ? java.time.Duration.between(now, reminder.getNextReminderTime()).getSeconds() 
-            : null);
-
-        return ResponseEntity.ok(status);
     }
 
     @GetMapping("/due")
