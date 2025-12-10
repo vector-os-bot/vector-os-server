@@ -29,10 +29,11 @@ spring:
         url: ${TELEGRAM_WEBAPP_URL:https://yourdomain.com/cabinet}
 
   redis:
-    host: ${SPRING_REDIS_HOST:redis}
-    port: ${SPRING_REDIS_PORT:6379}
+    # Пробуем разные варианты переменных окружения для совместимости
+    host: ${SPRING_DATA_REDIS_HOST:${SPRING_REDIS_HOST:redis}}
+    port: ${SPRING_DATA_REDIS_PORT:${SPRING_REDIS_PORT:6379}}
     timeout: 2000ms
-    password: ${SPRING_REDIS_PASSWORD:}
+    password: ${SPRING_DATA_REDIS_PASSWORD:${SPRING_REDIS_PASSWORD:}}
     lettuce:
       pool:
         max-active: 8
@@ -75,4 +76,3 @@ management:
   endpoint:
     health:
       show-details: when-authorized
-
