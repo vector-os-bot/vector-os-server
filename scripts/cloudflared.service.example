@@ -1,0 +1,19 @@
+[Unit]
+Description=Cloudflare Tunnel with Auto Webhook Update
+After=network.target
+
+[Service]
+Type=simple
+User=root
+# Укажи полный путь к скрипту
+ExecStart=/opt/vector-os-server/scripts/cloudflared-with-webhook.sh
+# Или загрузи токен из .env файла
+EnvironmentFile=/opt/vector-os-server/.env
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
