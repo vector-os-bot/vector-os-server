@@ -29,7 +29,7 @@ spring:
         url: "https://prelatic-reticent-pasty.ngrok-free.dev"
 
   redis:
-    host: ${SPRING_REDIS_HOST:${REDIS_HOST:localhost}}
+    host: ${SPRING_REDIS_HOST:${REDIS_HOST:redis}}
     port: ${SPRING_REDIS_PORT:${REDIS_PORT:6379}}
     timeout: 2000ms
     lettuce:
