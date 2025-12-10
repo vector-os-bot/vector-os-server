@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/vectoros
+    url: jdbc:postgresql://localhost:5432/vectoros?currentSchema=vectoros
     username: postgres
     password: postgres
     driver-class-name: org.postgresql.Driver
@@ -11,6 +11,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        default_schema: vectoros
     open-in-view: false
     show-sql: true
 
@@ -18,6 +19,8 @@ spring:
     enabled: true
     locations:
       - classpath:db/migration
+    default-schema: vectoros
+    schemas: vectoros
 
   telegram:
     bot:
@@ -25,5 +28,33 @@ spring:
       webapp:
         url: "https://prelatic-reticent-pasty.ngrok-free.dev"
 
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
+  cache:
+    type: redis
+
+reminder:
+  scheduler:
+    redis:
+      check-interval-seconds: 30  # Проверка Redis каждые 30 секунд
+      cache-days-ahead: 7  # Кешируем напоминания на 7 дней вперед
+    postgres:
+      check-interval-minutes: 5  # Проверка PostgreSQL каждые 5 минут (fallback)
+    retry:
+      max-attempts: 3
+      retry-delay-minutes: 5
+
 server:
   port: 8080
+
+cors:
+  allowed:
+    origins: "*"  # В development разрешаем все источники

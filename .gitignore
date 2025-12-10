@@ -35,3 +35,6 @@ build/
 ### Application config with secrets ###
 # Не коммитим реальные секреты, используем application-local.yml для локальной разработки
 # src/main/resources/application.yml можно оставить с примером
+.env
+.env.local
+.env.production

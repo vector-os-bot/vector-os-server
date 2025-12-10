@@ -24,7 +24,7 @@ import java.time.LocalDate;
 
 @Data
 @Entity
-@Table(name = "tasks",
+@Table(name = "tasks", schema = "vectoros",
         indexes = {
                 @Index(name = "idx_tasks_user", columnList = "user_id"),
                 @Index(name = "idx_tasks_status", columnList = "status"),

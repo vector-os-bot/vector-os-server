@@ -3,7 +3,6 @@ package com.vectoros.server.task.service;
 import com.vectoros.server.task.entity.TaskEntity;
 import com.vectoros.server.task.repository.TaskRepository;
 import com.vectoros.server.user.entity.User;
-import com.vectoros.server.user.repository.UserRepository;
 import com.vectoros.server.user.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
