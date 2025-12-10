@@ -204,19 +204,24 @@ public class ReminderSchedulerService {
         reminderCacheService.removeReminderFromCache(reminder.getId());
         
         // Проверяем repeatability
+        // Используем текущее время отправки как базовое для расчета следующего напоминания
+        // Это важно для правильной работы повторяющихся напоминаний
+        Instant now = Instant.now();
         Instant nextTime = repeatabilityCalculator.calculateNextReminderTime(
-            reminder.getReminderTime(), reminder.getRepeatability());
+            now, reminder.getRepeatability());
         
         if (nextTime != null && reminder.getRepeatability() != ReminderRepeatability.ONCE) {
             // Повторяющееся напоминание - планируем следующее
             reminder.setNextReminderTime(nextTime);
             reminder.setStatus(ReminderStatus.PENDING);
-            reminder.setReminderTime(nextTime); // Обновляем базовое время
+            // Не меняем reminderTime - это первоначальное время создания напоминания
+            // Используем nextReminderTime для отслеживания следующей отправки
             
             // Добавляем в кеш
             reminderCacheService.addReminderToCache(reminder);
             
-            log.info("Scheduled next reminder for ID: {} at {}", reminder.getId(), nextTime);
+            log.info("Scheduled next reminder for ID: {} at {} (calculated from current time: {})", 
+                reminder.getId(), nextTime, now);
         } else {
             // Одноразовое напоминание - помечаем как отправленное
             reminder.setStatus(ReminderStatus.SENT);
