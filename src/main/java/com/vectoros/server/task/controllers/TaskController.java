@@ -1,7 +1,9 @@
 package com.vectoros.server.task.controllers;
 
+import com.vectoros.server.task.dto.TaskDto;
 import com.vectoros.server.task.entity.TaskEntity;
 import com.vectoros.server.task.service.TaskService;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,8 +23,11 @@ public class TaskController {
     private final TaskService taskService;
 
     @PostMapping
-    public TaskEntity createTask(@RequestBody TaskEntity task) {
-        return taskService.createTask(task);
+    public ResponseEntity<TaskEntity> createTask(
+            @Valid @RequestBody TaskDto dto,
+            @RequestParam Long telegramId) {
+        TaskEntity createdTask = taskService.createTask(dto, telegramId);
+        return ResponseEntity.ok(createdTask);
     }
 
     @GetMapping
